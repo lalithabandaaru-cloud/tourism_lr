@@ -1,0 +1,44 @@
+import pkg_resources
+import os
+import re
+
+def generate_requirements(project_path='tourism_project'):
+    packages = set()
+    for root, _, files in os.walk(project_path):
+        for file in files:
+            if file.endswith(('.py')):
+                filepath = os.path.join(root, file)
+                with open(filepath, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                    # Find import statements
+                    for match in re.findall(r'^import (\w+)|^from (\w+)', content, re.MULTILINE):
+                        pkg = match[0] or match[1]
+                        # Exclude standard library modules or known non-installable modules
+                        if pkg and pkg not in ['os', 'sys', 're', 'json', 'datetime', 'math', 'mlflow']:
+                            # For some packages, the import name is different from the PyPI name
+                            if pkg == 'pandas': packages.add('pandas')
+                            elif pkg == 'sklearn': packages.add('scikit-learn')
+                            elif pkg == 'huggingface_hub': packages.add('huggingface-hub')
+                            elif pkg == 'streamlit': packages.add('streamlit')
+                            elif pkg == 'joblib': packages.add('joblib')
+                            else: packages.add(pkg)
+    
+    # Add mlflow explicitly as it's used for tracking, and might not be caught by import scan for specific usages
+    packages.add('mlflow')
+    packages.add('pyngrok')
+
+    # Get versions of installed packages
+    installed_packages = {p.key: p.version for p in pkg_resources.working_set}
+    
+    requirements = []
+    for pkg_name in sorted(list(packages)):
+        if pkg_name in installed_packages:
+            requirements.append(f"{pkg_name}=={installed_packages[pkg_name]}")
+        else:
+            requirements.append(pkg_name) # Add without version if not found (e.g., if it's a sub-package)
+            
+    return "\n".join(requirements)
+
+# Generate and print requirements
+requirements_content = generate_requirements()
+print(requirements_content)

@@ -1,0 +1,7 @@
+huggingface-hub==1.18.0
+joblib==1.5.3
+mlflow==3.0.1
+pandas==2.2.2
+pyngrok==7.2.12
+scikit-learn==1.6.1
+streamlit
